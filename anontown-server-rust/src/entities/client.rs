@@ -2,12 +2,13 @@ use chrono::{DateTime, Utc};
 
 use crate::ports::{clock::ClockPort, safe_id_generator::SafeIdGeneratorPort};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Client {
     pub id: String,
     pub name: String,
-    pub description: String,
+    pub url: String,
     pub date: DateTime<Utc>,
+    pub update: DateTime<Utc>,
 }
 
 impl Client {
@@ -20,14 +21,15 @@ impl Client {
         Self {
             id: id_generator.generate(),
             name,
-            description,
+            url: description,
             date: clock.now(),
+            update: clock.now(),
         }
     }
 
     pub fn update(&mut self, name: String, description: String, clock: &impl ClockPort) {
         self.name = name;
-        self.description = description;
+        self.url = description;
         self.date = clock.now();
     }
 } 

@@ -6,6 +6,11 @@ use crate::schema::types::{
     ResType, StorageType, TagType, TokenType, TopicType, UpdateClientInput, UpdateTokenInput,
     UpdateUserInput, UserType, CreateTokenGeneralResponse, TokenReq, SetStoragesInput, SetStoragesPayload,
 };
+use crate::schema::input::{
+    CreateResInput, CreateTopicNormalInput, CreateTopicOneInput,
+    CreateTopicForkInput, UpdateTopicInput,
+};
+use crate::ports::{ResPort, TopicPort, UserPort};
 
 pub struct Mutation;
 
@@ -838,6 +843,97 @@ impl Mutation {
             &auth,
         ).await?;
 
+        Ok(true)
+    }
+
+    pub async fn create_res(
+        &self,
+        input: CreateResInput,
+        res_port: &dyn ResPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<ResType> {
+        let res = res_port.create(input).await?;
+        Ok(ResType::from(res))
+    }
+
+    pub async fn vote_res(
+        &self,
+        res_id: String,
+        vote_type: VoteType,
+        res_port: &dyn ResPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<ResType> {
+        let res = res_port.vote(res_id, vote_type).await?;
+        Ok(ResType::from(res))
+    }
+
+    pub async fn del_res(
+        &self,
+        res_id: String,
+        res_port: &dyn ResPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<ResType> {
+        let res = res_port.delete(res_id).await?;
+        Ok(ResType::from(res))
+    }
+
+    pub async fn create_topic_normal(
+        &self,
+        input: CreateTopicNormalInput,
+        topic_port: &dyn TopicPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<TopicType> {
+        let topic = topic_port.create_normal(input).await?;
+        Ok(TopicType::from(topic))
+    }
+
+    pub async fn create_topic_one(
+        &self,
+        input: CreateTopicOneInput,
+        topic_port: &dyn TopicPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<TopicType> {
+        let topic = topic_port.create_one(input).await?;
+        Ok(TopicType::from(topic))
+    }
+
+    pub async fn create_topic_fork(
+        &self,
+        input: CreateTopicForkInput,
+        topic_port: &dyn TopicPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<TopicType> {
+        let topic = topic_port.create_fork(input).await?;
+        Ok(TopicType::from(topic))
+    }
+
+    pub async fn update_topic(
+        &self,
+        input: UpdateTopicInput,
+        topic_port: &dyn TopicPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<TopicType> {
+        let topic = topic_port.update(input).await?;
+        Ok(TopicType::from(topic))
+    }
+
+    pub async fn subscribe_topic(
+        &self,
+        topic_id: String,
+        topic_port: &dyn TopicPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<bool> {
+        topic_port.subscribe(topic_id).await?;
+        Ok(true)
+    }
+
+    pub async fn unsubscribe_topic(
+        &self,
+        topic_id: String,
+        topic_port: &dyn TopicPort,
+        user_port: &dyn UserPort,
+    ) -> FieldResult<bool> {
+        topic_port.unsubscribe(topic_id).await?;
         Ok(true)
     }
 } 

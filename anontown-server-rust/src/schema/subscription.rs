@@ -1,14 +1,20 @@
-use juniper::{graphql_subscription, FieldResult, ID};
-use futures::Stream;
-
+use juniper::{FieldResult, GraphQLObject};
 use crate::schema::types::{ResType, ResSubscript};
+use crate::ports::ResPort;
 
 pub struct Subscription;
 
-#[graphql_subscription]
+#[juniper::graphql_subscription]
 impl Subscription {
-    async fn res_added(&self, topic: ID) -> impl Stream<Item = FieldResult<ResSubscript>> {
-        // TODO: 実装
-        futures::stream::empty()
+    pub async fn res_added(
+        &self,
+        topic_id: String,
+        res_port: &dyn ResPort,
+    ) -> FieldResult<ResSubscript> {
+        let (res, count) = res_port.subscribe(topic_id).await?;
+        Ok(ResSubscript {
+            res: ResType::from(res),
+            count,
+        })
     }
 } 
