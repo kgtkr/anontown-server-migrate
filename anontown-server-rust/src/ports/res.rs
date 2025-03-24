@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use crate::entities::{Res, ResType, ResDeleteFlag};
+use futures::Stream;
 
 #[async_trait]
 pub trait ResPort {
@@ -16,4 +17,5 @@ pub trait ResPort {
     async fn count_by_type(&self, res_type: ResType) -> Result<i64, Box<dyn std::error::Error>>;
     async fn count_by_topic_id(&self, topic_id: &str) -> Result<i64, Box<dyn std::error::Error>>;
     async fn count_by_user_id(&self, user_id: &str) -> Result<i64, Box<dyn std::error::Error>>;
+    fn subscribe_insert_event(&self, topic_id: &str) -> Box<dyn Stream<Item = Result<(Res, i64), Box<dyn std::error::Error>>> + Send + Unpin>;
 } 

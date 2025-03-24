@@ -195,4 +195,107 @@ impl HistoryPort for HistoryRepo {
 
         Ok(histories)
     }
+
+    async fn find_by_id(&self, id: &str) -> Result<Option<History>, Box<dyn std::error::Error>> {
+        let history = sqlx::query_as!(
+            History,
+            r#"
+            SELECT id, text, created_at, updated_at, user_id, topic_id, res_id
+            FROM histories
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(history)
+    }
+
+    async fn find_by_topic_id(
+        &self,
+        topic_id: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<History>, Box<dyn std::error::Error>> {
+        let histories = sqlx::query_as!(
+            History,
+            r#"
+            SELECT id, text, created_at, updated_at, user_id, topic_id, res_id
+            FROM histories
+            WHERE topic_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            topic_id,
+            limit,
+            offset
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(histories)
+    }
+
+    async fn find_by_user_id(
+        &self,
+        user_id: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<History>, Box<dyn std::error::Error>> {
+        let histories = sqlx::query_as!(
+            History,
+            r#"
+            SELECT id, text, created_at, updated_at, user_id, topic_id, res_id
+            FROM histories
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            user_id,
+            limit,
+            offset
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(histories)
+    }
+
+    async fn create(&self, history: &History) -> Result<(), Box<dyn std::error::Error>> {
+        sqlx::query!(
+            r#"
+            INSERT INTO histories (id, text, created_at, updated_at, user_id, topic_id, res_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            "#,
+            history.id,
+            history.text,
+            history.created_at,
+            history.updated_at,
+            history.user_id,
+            history.topic_id,
+            history.res_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn update(&self, history: &History) -> Result<(), Box<dyn std::error::Error>> {
+        sqlx::query!(
+            r#"
+            UPDATE histories
+            SET text = $1, updated_at = $2
+            WHERE id = $3
+            "#,
+            history.text,
+            history.updated_at,
+            history.id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
 } 

@@ -1,8 +1,10 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use sqlx::PgPool;
-use crate::models::Topic;
-use crate::ports::topic::{TopicPort, TopicQuery};
+use std::collections::HashMap;
+
+use crate::entities::{Topic, TopicType};
+use crate::ports::topic::TopicPort;
 
 pub struct TopicRepo {
     pool: PgPool,
@@ -16,59 +18,87 @@ impl TopicRepo {
 
 #[async_trait]
 impl TopicPort for TopicRepo {
-    async fn find_one(&mut self, id: &str) -> Result<Topic, Box<dyn std::error::Error>> {
+    async fn find_by_id(&self, id: &str) -> Result<Option<Topic>, Box<dyn std::error::Error>> {
         let topic = sqlx::query_as!(
             Topic,
             r#"
-            SELECT id, title, description, type, parent_id, updated_at,
-                   created_at, age_updated_at, active, tags
+            SELECT id, title, text, created_at, updated_at, user_id, topic_type as "topic_type: TopicType",
+                   res_count, hash, one, profile_id, age, history_id, fork_id
             FROM topics
             WHERE id = $1
             "#,
             id
         )
-        .fetch_one(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
 
         Ok(topic)
     }
 
-    async fn find_tags(&mut self, limit: i32) -> Result<Vec<(String, i32)>, Box<dyn std::error::Error>> {
-        let tags = sqlx::query!(
+    async fn find_by_user_id(
+        &self,
+        user_id: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Topic>, Box<dyn std::error::Error>> {
+        let topics = sqlx::query_as!(
+            Topic,
             r#"
-            SELECT tag, COUNT(*) as count
-            FROM topic_tags
-            GROUP BY tag
-            ORDER BY count DESC
-            LIMIT $1
+            SELECT id, title, text, created_at, updated_at, user_id, topic_type as "topic_type: TopicType",
+                   res_count, hash, one, profile_id, age, history_id, fork_id
+            FROM topics
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
             "#,
-            limit
+            user_id,
+            limit,
+            offset
         )
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(tags.into_iter().map(|t| (t.tag, t.count.unwrap_or(0) as i32)).collect())
+        Ok(topics)
     }
 
-    async fn insert(&mut self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
+    async fn find_by_hash(&self, hash: &str) -> Result<Option<Topic>, Box<dyn std::error::Error>> {
+        let topic = sqlx::query_as!(
+            Topic,
+            r#"
+            SELECT id, title, text, created_at, updated_at, user_id, topic_type as "topic_type: TopicType",
+                   res_count, hash, one, profile_id, age, history_id, fork_id
+            FROM topics
+            WHERE hash = $1
+            "#,
+            hash
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(topic)
+    }
+
+    async fn create(&self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
         sqlx::query!(
             r#"
-            INSERT INTO topics (
-                id, title, description, type, parent_id, updated_at,
-                created_at, age_updated_at, active, tags
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            INSERT INTO topics (id, title, text, created_at, updated_at, user_id, topic_type,
+                              res_count, hash, one, profile_id, age, history_id, fork_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             "#,
             topic.id,
             topic.title,
-            topic.description,
-            topic.topic_type,
-            topic.parent_id,
-            topic.updated_at,
+            topic.text,
             topic.created_at,
-            topic.age_updated_at,
-            topic.active,
-            &topic.tags
+            topic.updated_at,
+            topic.user_id,
+            topic.topic_type as TopicType,
+            topic.res_count,
+            topic.hash,
+            topic.one,
+            topic.profile_id,
+            topic.age,
+            topic.history_id,
+            topic.fork_id
         )
         .execute(&self.pool)
         .await?;
@@ -76,25 +106,26 @@ impl TopicPort for TopicRepo {
         Ok(())
     }
 
-    async fn update(&mut self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
+    async fn update(&self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
         sqlx::query!(
             r#"
             UPDATE topics
-            SET title = $1, description = $2, type = $3,
-                parent_id = $4, updated_at = $5,
-                created_at = $6, age_updated_at = $7,
-                active = $8, tags = $9
-            WHERE id = $10
+            SET title = $1, text = $2, updated_at = $3, topic_type = $4,
+                res_count = $5, hash = $6, one = $7, profile_id = $8,
+                age = $9, history_id = $10, fork_id = $11
+            WHERE id = $12
             "#,
             topic.title,
-            topic.description,
-            topic.topic_type,
-            topic.parent_id,
+            topic.text,
             topic.updated_at,
-            topic.created_at,
-            topic.age_updated_at,
-            topic.active,
-            &topic.tags,
+            topic.topic_type as TopicType,
+            topic.res_count,
+            topic.hash,
+            topic.one,
+            topic.profile_id,
+            topic.age,
+            topic.history_id,
+            topic.fork_id,
             topic.id
         )
         .execute(&self.pool)
@@ -103,14 +134,16 @@ impl TopicPort for TopicRepo {
         Ok(())
     }
 
-    async fn cron_topic_check(&mut self, now: DateTime<Utc>) -> Result<(), Box<dyn std::error::Error>> {
+    async fn update_res_count(&self, id: &str, count: i64) -> Result<(), Box<dyn std::error::Error>> {
         sqlx::query!(
             r#"
             UPDATE topics
-            SET active = false
-            WHERE age_updated_at < $1
+            SET res_count = $1, updated_at = $2
+            WHERE id = $3
             "#,
-            now
+            count,
+            Utc::now(),
+            id
         )
         .execute(&self.pool)
         .await?;
@@ -118,128 +151,54 @@ impl TopicPort for TopicRepo {
         Ok(())
     }
 
-    async fn find(&mut self, query: &TopicQuery, skip: i32, limit: i32) -> Result<Vec<Topic>, Box<dyn std::error::Error>> {
-        let mut conditions = Vec::new();
-        let mut params = Vec::new();
-
-        if let Some(active_only) = query.active_only {
-            conditions.push("active = $1");
-            params.push(active_only);
-        }
-
-        if let Some(ids) = &query.id {
-            if !ids.is_empty() {
-                conditions.push(format!("id = ANY(${})", params.len() + 1));
-                params.push(ids);
-            }
-        }
-
-        if let Some(parent) = &query.parent {
-            conditions.push(format!("parent_id = ${}", params.len() + 1));
-            params.push(parent);
-        }
-
-        if let Some(tags) = &query.tags {
-            if !tags.is_empty() {
-                conditions.push(format!("tags && ${}", params.len() + 1));
-                params.push(tags);
-            }
-        }
-
-        if let Some(title) = &query.title {
-            conditions.push(format!("title ILIKE ${}", params.len() + 1));
-            params.push(format!("%{}%", title));
-        }
-
-        let where_clause = if conditions.is_empty() {
-            String::new()
-        } else {
-            format!("WHERE {}", conditions.join(" AND "))
-        };
-
-        let query = format!(
+    async fn update_age(&self, id: &str, age: bool) -> Result<(), Box<dyn std::error::Error>> {
+        sqlx::query!(
             r#"
-            SELECT id, title, description, type, parent_id, updated_at,
-                   created_at, age_updated_at, active, tags
+            UPDATE topics
+            SET age = $1, updated_at = $2
+            WHERE id = $3
+            "#,
+            age,
+            Utc::now(),
+            id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn count_by_type(&self, topic_type: TopicType) -> Result<i64, Box<dyn std::error::Error>> {
+        let count = sqlx::query!(
+            r#"
+            SELECT COUNT(*) as count
             FROM topics
-            {}
-            ORDER BY created_at DESC
-            LIMIT ${{}} OFFSET ${{}}
+            WHERE topic_type = $1
             "#,
-            where_clause
-        );
-
-        let mut query = sqlx::query_as::<_, Topic>(&query);
-        for param in params {
-            query = query.bind(param);
-        }
-        query = query.bind(limit).bind(skip);
-
-        let topics = query.fetch_all(&self.pool).await?;
-        Ok(topics)
-    }
-
-    async fn subscription_user_ids(&mut self, topic_id: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        let user_ids = sqlx::query!(
-            r#"
-            SELECT user_id
-            FROM topic_subscriptions
-            WHERE topic_id = $1
-            "#,
-            topic_id
+            topic_type as TopicType
         )
-        .fetch_all(&self.pool)
-        .await?;
+        .fetch_one(&self.pool)
+        .await?
+        .count
+        .unwrap_or(0);
 
-        Ok(user_ids.into_iter().map(|r| r.user_id).collect())
+        Ok(count)
     }
 
-    async fn enable_subscription(&mut self, topic_id: &str, user_id: &str) -> Result<(), Box<dyn std::error::Error>> {
-        sqlx::query!(
+    async fn count_by_user_id(&self, user_id: &str) -> Result<i64, Box<dyn std::error::Error>> {
+        let count = sqlx::query!(
             r#"
-            INSERT INTO topic_subscriptions (topic_id, user_id)
-            VALUES ($1, $2)
-            ON CONFLICT DO NOTHING
+            SELECT COUNT(*) as count
+            FROM topics
+            WHERE user_id = $1
             "#,
-            topic_id,
-            user_id
-        )
-        .execute(&self.pool)
-        .await?;
-
-        Ok(())
-    }
-
-    async fn disable_subscription(&mut self, topic_id: &str, user_id: &str) -> Result<(), Box<dyn std::error::Error>> {
-        sqlx::query!(
-            r#"
-            DELETE FROM topic_subscriptions
-            WHERE topic_id = $1 AND user_id = $2
-            "#,
-            topic_id,
-            user_id
-        )
-        .execute(&self.pool)
-        .await?;
-
-        Ok(())
-    }
-
-    async fn get_subscription(&mut self, topic_id: &str, user_id: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        let subscription = sqlx::query!(
-            r#"
-            SELECT EXISTS (
-                SELECT 1
-                FROM topic_subscriptions
-                WHERE topic_id = $1 AND user_id = $2
-            ) as exists
-            "#,
-            topic_id,
             user_id
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await?
+        .count
+        .unwrap_or(0);
 
-        Ok(subscription.exists.unwrap_or(false))
+        Ok(count)
     }
 } 

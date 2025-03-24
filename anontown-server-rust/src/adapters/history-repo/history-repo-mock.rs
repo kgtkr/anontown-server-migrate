@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::Utc;
 use std::collections::HashMap;
 use crate::entities::History;
 use crate::ports::history::{HistoryPort, HistoryQuery, DateQuery};
@@ -17,12 +18,54 @@ impl HistoryRepoMock {
 
 #[async_trait]
 impl HistoryPort for HistoryRepoMock {
-    async fn insert(&mut self, history: &History) -> Result<(), Box<dyn std::error::Error>> {
+    async fn find_by_id(&self, id: &str) -> Result<Option<History>, Box<dyn std::error::Error>> {
+        Ok(self.histories.get(id).cloned())
+    }
+
+    async fn find_by_topic_id(
+        &self,
+        topic_id: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<History>, Box<dyn std::error::Error>> {
+        let mut histories: Vec<History> = self
+            .histories
+            .values()
+            .filter(|history| history.topic_id == topic_id)
+            .cloned()
+            .collect();
+
+        histories.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        histories = histories.into_iter().skip(offset as usize).take(limit as usize).collect();
+
+        Ok(histories)
+    }
+
+    async fn find_by_user_id(
+        &self,
+        user_id: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<History>, Box<dyn std::error::Error>> {
+        let mut histories: Vec<History> = self
+            .histories
+            .values()
+            .filter(|history| history.user_id == user_id)
+            .cloned()
+            .collect();
+
+        histories.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        histories = histories.into_iter().skip(offset as usize).take(limit as usize).collect();
+
+        Ok(histories)
+    }
+
+    async fn create(&self, history: &History) -> Result<(), Box<dyn std::error::Error>> {
         self.histories.insert(history.id.clone(), history.clone());
         Ok(())
     }
 
-    async fn update(&mut self, history: &History) -> Result<(), Box<dyn std::error::Error>> {
+    async fn update(&self, history: &History) -> Result<(), Box<dyn std::error::Error>> {
         if self.histories.contains_key(&history.id) {
             self.histories.insert(history.id.clone(), history.clone());
             Ok(())

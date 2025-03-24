@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::collections::{HashMap, HashSet};
-use crate::models::Topic;
+use crate::entities::{Topic, TopicType};
 use crate::ports::topic::{TopicPort, TopicQuery};
 
 pub struct TopicRepoMock {
@@ -20,10 +20,83 @@ impl TopicRepoMock {
 
 #[async_trait]
 impl TopicPort for TopicRepoMock {
-    async fn find_one(&mut self, id: &str) -> Result<Topic, Box<dyn std::error::Error>> {
-        self.topics.get(id)
+    async fn find_by_id(&self, id: &str) -> Result<Option<Topic>, Box<dyn std::error::Error>> {
+        Ok(self.topics.get(id).cloned())
+    }
+
+    async fn find_by_user_id(
+        &self,
+        user_id: &str,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Topic>, Box<dyn std::error::Error>> {
+        let mut topics: Vec<Topic> = self
+            .topics
+            .values()
+            .filter(|topic| topic.user_id == user_id)
             .cloned()
-            .ok_or_else(|| "Topic not found".into())
+            .collect();
+
+        topics.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        topics = topics.into_iter().skip(offset as usize).take(limit as usize).collect();
+
+        Ok(topics)
+    }
+
+    async fn find_by_hash(&self, hash: &str) -> Result<Option<Topic>, Box<dyn std::error::Error>> {
+        Ok(self.topics.values().find(|topic| topic.hash == hash).cloned())
+    }
+
+    async fn create(&self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
+        self.topics.insert(topic.id.clone(), topic.clone());
+        Ok(())
+    }
+
+    async fn update(&self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
+        if self.topics.contains_key(&topic.id) {
+            self.topics.insert(topic.id.clone(), topic.clone());
+            Ok(())
+        } else {
+            Err("Topic not found".into())
+        }
+    }
+
+    async fn update_res_count(&self, id: &str, count: i64) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(topic) = self.topics.get_mut(id) {
+            topic.res_count = count;
+            topic.updated_at = Utc::now();
+            Ok(())
+        } else {
+            Err("Topic not found".into())
+        }
+    }
+
+    async fn update_age(&self, id: &str, age: bool) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(topic) = self.topics.get_mut(id) {
+            topic.age = age;
+            topic.updated_at = Utc::now();
+            Ok(())
+        } else {
+            Err("Topic not found".into())
+        }
+    }
+
+    async fn count_by_type(&self, topic_type: TopicType) -> Result<i64, Box<dyn std::error::Error>> {
+        let count = self
+            .topics
+            .values()
+            .filter(|topic| topic.topic_type == topic_type)
+            .count() as i64;
+        Ok(count)
+    }
+
+    async fn count_by_user_id(&self, user_id: &str) -> Result<i64, Box<dyn std::error::Error>> {
+        let count = self
+            .topics
+            .values()
+            .filter(|topic| topic.user_id == user_id)
+            .count() as i64;
+        Ok(count)
     }
 
     async fn find_tags(&mut self, _limit: i32) -> Result<Vec<(String, i32)>, Box<dyn std::error::Error>> {
@@ -41,7 +114,7 @@ impl TopicPort for TopicRepoMock {
         Ok(())
     }
 
-    async fn update(&mut self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
+    async fn update_topic(&mut self, topic: &Topic) -> Result<(), Box<dyn std::error::Error>> {
         self.topics.insert(topic.id.clone(), topic.clone());
         Ok(())
     }
