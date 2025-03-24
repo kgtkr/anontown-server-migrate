@@ -1,0 +1,6 @@
+[submodule "anontown-server"]
+	path = anontown-server
+	url = https://github.com/kgtkr/anontown-server.git
+[submodule "average-character-cloud-backend"]
+	path = average-character-cloud-backend
+	url = https://github.com/kgtkr/average-character-cloud-backend.git

@@ -1,0 +1,223 @@
+type User {
+  id: ID!
+  screenName: String!
+  lv: Int!
+  resLastCreatedAt: DateTime!
+  countCreatedResM10: Int!
+  countCreatedResM30: Int!
+  countCreatedResH1: Int!
+  countCreatedResH6: Int!
+  countCreatedResH12: Int!
+  countCreatedResD1: Int!
+  topicLastCreatedAt: DateTime!
+  createdAt: DateTime!
+  point: Int!
+  oneTopicLastCreatedAt: DateTime!
+  profile: Profile
+  topics: [Topic!]!
+  reses: [Res!]!
+  name: String!
+  email: String!
+  password: String!
+  updatedAt: DateTime!
+}
+
+type Profile {
+  id: ID!
+  userId: ID!
+  name: String!
+  description: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  screenName: String!
+}
+
+type Topic {
+  id: ID!
+  type: TopicType!
+  title: String!
+  updatedAt: DateTime!
+  createdAt: DateTime!
+  ageUpdatedAt: DateTime!
+  active: Boolean!
+  description: String
+  parentId: ID
+  reses: [Res!]!
+}
+
+type Res {
+  id: ID!
+  type: ResType!
+  topicId: ID!
+  createdAt: DateTime!
+  userId: ID!
+  lv: Int!
+  hash: String!
+  name: String
+  content: String
+  replyId: ID
+  deleteFlag: ResDeleteFlag
+  profileId: ID
+  age: Boolean
+  historyId: ID
+  forkId: ID
+  votes: [ResVote!]!
+}
+
+type ResVote {
+  resId: ID!
+  order: Int!
+  userId: ID!
+  vote: Int!
+}
+
+type History {
+  id: ID!
+  topicId: ID!
+  title: String!
+  description: String!
+  createdAt: DateTime!
+  hash: String!
+  userId: ID!
+  tags: [HistoryTag!]!
+}
+
+type HistoryTag {
+  historyId: ID!
+  order: Int!
+  tag: String!
+}
+
+enum TopicType {
+  NORMAL
+  ONE
+  FORK
+}
+
+enum ResType {
+  NORMAL
+  HISTORY
+  TOPIC
+  FORK
+}
+
+enum ResDeleteFlag {
+  ACTIVE
+  SELF
+  FREEZE
+}
+
+scalar DateTime
+
+type Query {
+  me: User
+  user(id: ID!): User
+  users: [User!]!
+  client(id: ID!): Client
+  clients: [Client!]!
+  token(id: ID!): Token
+  tokens: [Token!]!
+  topic(id: ID!): Topic
+  res(id: ID!): Res
+  history(id: ID!): History
+  topics(limit: Int = 20, offset: Int = 0): [Topic!]!
+  reses(topicId: ID!, limit: Int = 20, offset: Int = 0): [Res!]!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(input: UpdateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+  createClient(input: CreateClientInput!): Client!
+  updateClient(input: UpdateClientInput!): Client!
+  deleteClient(id: ID!): Boolean!
+  createToken(input: CreateTokenInput!): Token!
+  updateToken(input: UpdateTokenInput!): Token!
+  deleteToken(id: ID!): Boolean!
+  createTopic(input: CreateTopicInput!): Topic!
+  createRes(input: CreateResInput!): Res!
+  createHistory(input: CreateHistoryInput!): History!
+  voteRes(input: VoteResInput!): ResVote!
+}
+
+input CreateUserInput {
+  name: String!
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  id: ID!
+  name: String
+  email: String
+  password: String
+}
+
+input CreateClientInput {
+  name: String!
+}
+
+input UpdateClientInput {
+  id: ID!
+  name: String
+}
+
+input CreateTokenInput {
+  userId: String!
+  clientId: String!
+  expiresIn: Int!
+}
+
+input UpdateTokenInput {
+  id: ID!
+  expiresIn: Int
+}
+
+input CreateTopicInput {
+  title: String!
+  description: String
+  type: TopicType = NORMAL
+}
+
+input CreateResInput {
+  topicId: ID!
+  content: String!
+  name: String
+  replyId: ID
+}
+
+input CreateHistoryInput {
+  topicId: ID!
+  title: String!
+  description: String!
+  tags: [String!]
+}
+
+input VoteResInput {
+  resId: ID!
+  vote: Int!
+}
+
+type Client {
+  id: ID!
+  name: String!
+  secret: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Token {
+  id: ID!
+  userId: String!
+  clientId: String!
+  accessToken: String!
+  refreshToken: String!
+  expiresAt: DateTime!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+} 
