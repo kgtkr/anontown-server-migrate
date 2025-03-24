@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use std::collections::HashMap;
-use crate::models::History;
+use crate::entities::History;
 use crate::ports::history::{HistoryPort, HistoryQuery, DateQuery};
 
 pub struct HistoryRepoMock {

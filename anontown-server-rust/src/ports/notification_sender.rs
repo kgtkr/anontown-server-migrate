@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use crate::models::notification::Notification;
+use crate::entities::notification::Notification;
 
 #[async_trait]
 pub trait NotificationSenderPort {

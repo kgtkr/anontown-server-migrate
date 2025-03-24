@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use crate::models::{Res, ResType, ResDeleteFlag};
+use crate::entities::{Res, ResType, ResDeleteFlag};
 
 #[async_trait]
 pub trait ResPort {

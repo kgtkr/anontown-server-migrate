@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
-use crate::models::History;
+use crate::entities::History;
 use crate::ports::history::{HistoryPort, HistoryQuery, DateQuery};
 
 pub struct HistoryRepo {

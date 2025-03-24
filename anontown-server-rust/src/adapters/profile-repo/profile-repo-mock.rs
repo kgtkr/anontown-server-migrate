@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use std::collections::HashMap;
-use crate::models::Profile;
+use crate::entities::Profile;
 use crate::ports::profile::{ProfilePort, ProfileQuery};
 
 pub struct ProfileRepoMock {

@@ -1,4 +1,4 @@
-use crate::models::profile::ProfileAPI;
+use crate::entities::profile::ProfileAPI;
 use crate::ports::{auth::AuthPort, profile_loader::ProfileLoaderPort};
 
 /// 指定されたidのprofileを取得する

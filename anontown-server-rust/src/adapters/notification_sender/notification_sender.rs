@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use reqwest::Client;
-use crate::models::notification::Notification;
+use crate::entities::notification::Notification;
 use crate::ports::notification_sender::NotificationSenderPort;
 
 pub struct NotificationSender {

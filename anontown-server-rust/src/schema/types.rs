@@ -1,7 +1,9 @@
-use juniper::{GraphQLInputObject, GraphQLObject, ID};
+use juniper::{GraphQLInputObject, GraphQLObject, ID, GraphQLEnum};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 use crate::entities::{client::Client, token::Token, user::User, topic::Topic, res::Res};
+use crate::schema::scalar::DateTimeScalar;
 
 #[derive(GraphQLObject)]
 pub struct UserType {
@@ -68,32 +70,23 @@ pub struct CreateTokenGeneralResponse {
 
 #[derive(GraphQLObject)]
 pub struct TopicType {
-    pub id: String,
+    pub id: ID,
     pub title: String,
-    pub update: DateTime<Utc>,
-    pub date: DateTime<Utc>,
-    pub res_count: i32,
-    pub active: bool,
-    pub subscribe: Option<bool>,
-    pub tags: Option<Vec<String>>,
-    pub text: Option<String>,
-    pub parent: Option<Box<TopicType>>,
+    pub text: String,
+    pub update: DateTimeScalar,
+    pub date: DateTimeScalar,
+    pub user_id: ID,
+    pub vote_flag: Option<VoteFlag>,
 }
 
 #[derive(GraphQLObject)]
 pub struct ResType {
-    pub id: String,
-    pub topic: TopicType,
-    pub date: DateTime<Utc>,
-    pub self_: Option<bool>,
-    pub uv: i32,
-    pub dv: i32,
-    pub hash: String,
-    pub reply_count: i32,
-    pub vote_flag: Option<VoteFlag>,
-    pub name: Option<String>,
+    pub id: ID,
     pub text: String,
-    pub profile: Option<ProfileType>,
+    pub topic_id: ID,
+    pub user_id: ID,
+    pub created_at: DateTimeScalar,
+    pub updated_at: DateTimeScalar,
 }
 
 #[derive(GraphQLObject)]
@@ -157,11 +150,10 @@ pub enum VoteType {
     Cv,
 }
 
-#[derive(GraphQLEnum)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, GraphQLEnum)]
 pub enum VoteFlag {
-    Uv,
-    Dv,
-    Cv,
+    Up,
+    Down,
 }
 
 #[derive(GraphQLEnum)]
@@ -215,14 +207,11 @@ impl From<Topic> for TopicType {
         Self {
             id: topic.id,
             title: topic.title,
+            text: topic.text,
             update: topic.update,
             date: topic.date,
-            res_count: topic.res_count,
-            active: topic.active,
-            subscribe: topic.subscribe,
-            tags: topic.tags,
-            text: topic.text,
-            parent: topic.parent.map(|p| Box::new(p.into())),
+            user_id: topic.user_id,
+            vote_flag: topic.vote_flag,
         }
     }
 }
@@ -231,17 +220,11 @@ impl From<Res> for ResType {
     fn from(res: Res) -> Self {
         Self {
             id: res.id,
-            topic: res.topic.into(),
-            date: res.date,
-            self_: res.self_,
-            uv: res.uv,
-            dv: res.dv,
-            hash: res.hash,
-            reply_count: res.reply_count,
-            vote_flag: res.vote_flag,
-            name: res.name,
             text: res.text,
-            profile: res.profile.map(|p| p.into()),
+            topic_id: res.topic_id,
+            user_id: res.user_id,
+            created_at: res.created_at,
+            updated_at: res.updated_at,
         }
     }
 } 

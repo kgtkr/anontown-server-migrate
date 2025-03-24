@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use std::sync::Mutex;
-use crate::models::AuthToken;
+use crate::entities::AuthToken;
 use crate::ports::auth::AuthPort;
 
 pub struct AuthContainer {

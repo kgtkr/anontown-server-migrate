@@ -9,12 +9,13 @@ use juniper::http::playground::playground_source;
 mod context;
 mod error;
 mod handlers;
-mod models;
 mod routes;
 mod schema;
+mod ports;
+mod entities;
 
 use context::Context;
-use schema::{Query, Mutation, Schema};
+use schema::{Query, Mutation, Subscription, Schema};
 
 async fn health_check() -> impl Responder {
     serde_json::json!({
@@ -84,7 +85,7 @@ async fn main() -> std::io::Result<()> {
     let context = Context { db: pool, redis };
 
     // Create schema
-    let schema = Schema::new(Query, Mutation);
+    let schema = Schema::new(Query, Mutation, Subscription);
 
     log::info!("Starting server at {}:{}", host, port);
 

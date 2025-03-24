@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use tokio::sync::mpsc;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::models::notification::Notification;
+use crate::entities::notification::Notification;
 use crate::ports::notification_queue::NotificationQueuePort;
 
 pub struct NotificationQueue {
