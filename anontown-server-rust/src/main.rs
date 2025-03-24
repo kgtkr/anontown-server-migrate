@@ -5,6 +5,7 @@ use std::env;
 use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
 use juniper::http::playground::playground_source;
+use juniper::http::GraphQLResponse;
 
 mod context;
 mod error;
@@ -17,11 +18,11 @@ mod entities;
 use context::Context;
 use schema::{Query, Mutation, Subscription, Schema};
 
-async fn health_check() -> impl Responder {
-    serde_json::json!({
+async fn health_check() -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "message": "Anontown Server is running"
-    })
+    }))
 }
 
 async fn graphql_playground() -> HttpResponse {
@@ -36,20 +37,14 @@ async fn graphiql() -> HttpResponse {
         .body(graphiql_source("/graphql", None))
 }
 
-async fn graphql(
+async fn graphql_handler(
     schema: web::Data<Schema>,
     context: web::Data<Context>,
-    req: web::Json<GraphQLRequest>,
+    req: web::Json<juniper::http::GraphQLRequest>,
 ) -> HttpResponse {
-    let res = req.execute(&schema, &context).await;
-    match res {
-        Ok(graphql_response) => {
-            if graphql_response.is_ok() {
-                HttpResponse::Ok().json(graphql_response)
-            } else {
-                HttpResponse::BadRequest().json(graphql_response)
-            }
-        }
+    let res = req.execute(&schema, &context);
+    match res.0 {
+        Ok((value, _)) => HttpResponse::Ok().json(value),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
@@ -81,9 +76,6 @@ async fn main() -> std::io::Result<()> {
     let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
     let redis = redis::Client::open(redis_url).expect("Failed to create Redis client");
 
-    // Create context
-    let context = Context { db: pool, redis };
-
     // Create schema
     let schema = Schema::new(Query, Mutation, Subscription);
 
@@ -99,8 +91,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .app_data(web::Data::new(schema.clone()))
-            .app_data(web::Data::new(context.clone()))
-            .route("/graphql", web::post().to(graphql))
+            .app_data(web::Data::new(Context::new(crate::ports::Ports::new())))
+            .route("/health", web::get().to(health_check))
+            .route("/graphql", web::post().to(graphql_handler))
             .route("/graphiql", web::get().to(graphiql))
             .route("/playground", web::get().to(graphql_playground))
     })

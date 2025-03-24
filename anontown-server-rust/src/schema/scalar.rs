@@ -1,22 +1,24 @@
 use chrono::{DateTime, Utc};
-use juniper::{GraphQLScalar, Value};
+use juniper::{GraphQLScalar, ScalarValue, Value};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct DateTimeScalar(pub DateTime<Utc>);
 
-#[juniper::graphql_scalar(name = "DateTime")]
 impl GraphQLScalar for DateTimeScalar {
     fn resolve(&self) -> Value {
-        Value::string(self.0.to_rfc3339())
+        Value::scalar(self.0.to_rfc3339())
     }
 
-    fn from_input_value(value: &Value) -> Option<Self> {
-        match value {
-            Value::String(s) => DateTime::parse_from_rfc3339(s)
-                .ok()
-                .map(|dt| Self(dt.with_timezone(&Utc))),
-            _ => None,
-        }
+    fn from_str(value: &str) -> Result<Self, String> {
+        DateTime::parse_from_rfc3339(value)
+            .map(|dt| DateTimeScalar(dt.with_timezone(&Utc)))
+            .map_err(|e| e.to_string())
+    }
+}
+
+impl From<DateTime<Utc>> for DateTimeScalar {
+    fn from(dt: DateTime<Utc>) -> Self {
+        DateTimeScalar(dt)
     }
 } 

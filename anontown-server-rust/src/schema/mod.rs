@@ -1,14 +1,14 @@
-mod query;
-mod mutation;
-mod subscription;
-mod types;
-mod scalar;
+pub mod mutation;
+pub mod query;
+pub mod scalar;
+pub mod subscription;
+pub mod types;
 
-pub use query::Query;
 pub use mutation::Mutation;
+pub use query::Query;
+pub use scalar::DateTimeScalar;
 pub use subscription::Subscription;
 pub use types::*;
-pub use scalar::*;
 
 #[derive(Clone)]
 pub struct Schema(juniper::RootNode<'static, Query, Mutation, Subscription>);
