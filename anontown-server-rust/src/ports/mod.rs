@@ -40,4 +40,4 @@ pub struct Ports {
     pub redis: Box<dyn RedisPort>,
 }
 
-pub use auth_container::AuthContainerPort; 
+pub use auth_container::AuthContainer; 

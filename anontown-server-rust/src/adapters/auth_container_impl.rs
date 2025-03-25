@@ -1,18 +1,18 @@
 use crate::{AuthToken, AuthTokenMaster, AtError, AtResult};
-use crate::ports::AuthContainerPort;
+use crate::ports::AuthContainer;
 use std::option::Option;
 
-pub struct AuthContainer {
+pub struct AuthContainerImpl {
     token: Option<AuthToken>,
 }
 
-impl AuthContainer {
+impl AuthContainerImpl {
     pub fn new() -> Self {
         Self { token: None }
     }
 }
 
-impl AuthContainerPort for AuthContainer {
+impl AuthContainer for AuthContainerImpl {
     fn get_token(&self) -> AtResult<&AuthToken> {
         self.token.as_ref().ok_or_else(|| AtError::new(AtErrorKind::Auth, "認証が必要です"))
     }
