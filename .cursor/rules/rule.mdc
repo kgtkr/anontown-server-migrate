@@ -10,7 +10,19 @@ TypeScriptで書かれた anontown-server/ を Rustで anontown-server-rust/ に
 
 anontown-serverのIFooDBは永続化層での表現、IFooAPIはプレゼンテーション層での表現です。エンティティからIFooAPIへの変換は認証情報などを元に一部プロパティをマスクしています。
 
-rustのソースコードのファイル名はハイフンではなくアンダースコアを使って。
+## Rustプロジェクトの構成
+* ソースコードのファイル名はハイフンではなくアンダースコアを使って
+* entities, ports, adaptersではそのファイルでメインとなるstruct/enum/traitとファイル名はあわせて。例えばFooRepoがメインとなるファイルならfoo.rsではなくfoo_repo.rsにすること
+* adaptersは末尾にImplをつけること。例えばFooImpl、FooRepoImpl、FooRepoMockImplなど
+* portsの末尾にPortなどはつけないこと
+* ファイルが複雑になるrepoを除いてentities, ports, adaptersの直下にファイルを置くこと
+
+## リポジトリの実装
+* Repoで終わるportsはリポジトリです
+* ports以下にfoo_repo.rsを置いてください。foo_repoの中にはFooRepoのほかにfn run_foo_repo_lawsを定義して `#[cfg(test)]` をつけて
+* adapters/foo_repo以下にmod.rs, impl.rs, mock_impl.rs, model.rsを置いて
+* lawsは実際にDBにアクセスするか、インメモリのmockかに関係なく満たすべき条件を記述するものです。元のプロジェクトの*.th.tsにあるテストコードを移植して
+* modelはデータベース上の表現で、元のプロジェクトのIFooDBに対応します。implとmock_implで使います
 
 ## 正しいことが確認されているファイル
 以下のファイルは正しい移植が行われていることを確認済みなので実装の参考にして

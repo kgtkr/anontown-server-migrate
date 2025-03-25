@@ -15,6 +15,7 @@ pub mod storage;
 pub mod token;
 pub mod types;
 pub mod auth_container;
+mod token_repo;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -40,4 +41,5 @@ pub struct Ports {
     pub redis: Box<dyn RedisPort>,
 }
 
-pub use auth_container::AuthContainer; 
+pub use auth_container::AuthContainer;
+pub use token_repo::TokenRepo; 
