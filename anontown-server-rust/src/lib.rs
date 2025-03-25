@@ -2,6 +2,7 @@ pub mod adapters;
 pub mod entities;
 pub mod ports;
 pub mod schema;
+pub mod at_error;
 
 use actix_web::web;
 use juniper::http::GraphQLResponse;
