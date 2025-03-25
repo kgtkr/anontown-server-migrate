@@ -14,6 +14,7 @@ pub mod profile_repo;
 pub mod client_repo;
 pub mod token_repo;
 pub mod storage_repo;
+pub mod auth_container;
 
 pub use history_repo::history_repo::HistoryRepo;
 pub use history_repo::history_repo_mock::HistoryRepoMock;
@@ -24,4 +25,5 @@ pub use client_repo::client_repo_mock::ClientRepoMock;
 pub use token_repo::token_repo::TokenRepo;
 pub use token_repo::token_repo_mock::TokenRepoMock;
 pub use storage_repo::storage_repo::StorageRepo;
-pub use storage_repo::storage_repo_mock::StorageRepoMock; 
+pub use storage_repo::storage_repo_mock::StorageRepoMock;
+pub use auth_container::AuthContainer; 

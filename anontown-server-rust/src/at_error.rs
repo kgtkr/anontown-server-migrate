@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub type AtResult<T> = Result<T, AtError>;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AtErrorPublic {
     pub code: &'static str,

@@ -14,6 +14,7 @@ pub mod safe_id;
 pub mod storage;
 pub mod token;
 pub mod types;
+pub mod auth_container;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -37,4 +38,6 @@ pub struct Ports {
     pub recaptcha: Box<dyn RecaptchaPort>,
     pub database: Box<dyn DatabasePort>,
     pub redis: Box<dyn RedisPort>,
-} 
+}
+
+pub use auth_container::AuthContainerPort; 

@@ -9,3 +9,5 @@ TypeScriptで書かれた anontown-server/ を Rustで anontown-server-rust/ に
 リポジトリなどの抽象化層としてportsがあり、その実装はadaptersです。ドメインロジックはentitiesにあります。portsとentitiesは互いに依存可能ですが、portsとentitiesからadaptersに依存しないでください。また現在時刻取得といった副作用はports経由で行ってください。
 
 anontown-serverのIFooDBは永続化層での表現、IFooAPIはプレゼンテーション層での表現です。エンティティからIFooAPIへの変換は認証情報などを元に一部プロパティをマスクしています。
+
+rustのソースコードのファイル名はハイフンではなくアンダースコアを使って。
